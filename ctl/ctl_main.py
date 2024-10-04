@@ -4,8 +4,13 @@ import threading
 import dev_GPIO as gpio
 from dev_camera import Camera
 from dev_sht31 import SHT31
+from dev_WebSocket import WSOCKET
 from dotenv import load_dotenv
 
+# .env 파일 로드
+load_dotenv()
+
+# 환경 변수 로드 (환경 변수가 없는 경우 기본값을 지정)
 LED_INTERVAL = os.getenv('LED_INTERVAL', 1)
 LED_START_TIME = os.getenv('LED_START_TIME', 0)
 LED_END_TIME = os.getenv('LED_END_TIME', 17)
@@ -25,30 +30,27 @@ def collect_status(devices, stop_event):
     while not stop_event.is_set():  # stop_event가 설정되지 않은 동안 루프
         for device in devices:
             device.loop()  # 각 장치의 loop 호출
-        sleep(0.1)  # 0.1초 간격으로 loop 호출
+        sleep(1)  # 1초 간격으로 loop 호출
 
 if __name__ == "__main__":
-    # .env 파일 로드
-    load_dotenv()
-
     # GPIO 장치 생성 (환경 변수 값으로 생성)
     led = gpio.dev_GPIO(
         pin=17,
-        interval=int(LED_INTERVAL),
+        interval=int(LED_INTERVAL),  # 기본값이 숫자인지 확인
         name="LED",
         start_time=int(LED_START_TIME),
         end_time=int(LED_END_TIME)
     )
     fan = gpio.dev_GPIO(
         pin=27,
-        interval=int(FAN_INTERVAL),
+        interval=int(FAN_INTERVAL),  # 기본값이 숫자인지 확인
         name="FAN",
         start_time=int(FAN_START_TIME),
         end_time=int(FAN_END_TIME)
     )
     pump = gpio.dev_GPIO(
         pin=22,
-        interval=int(),
+        interval=int(PUMP_INTERVAL),  # 기본값이 숫자인지 확인
         name="PUMP",
         start_time=int(PUMP_START_TIME),
         end_time=int(PUMP_END_TIME)
@@ -64,7 +66,9 @@ if __name__ == "__main__":
         sht31_callback=sht31_sensor.read_sht31  # DI 방식으로 온습도 데이터 주입
     )
 
-    devices = [led, fan, pump, camera]  # 모든 장치 리스트
+    wSocket = WSOCKET()
+
+    devices = [led, fan, pump, camera, wSocket]  # 모든 장치 리스트
 
     # 스레드 종료 이벤트 설정
     stop_event = threading.Event()
