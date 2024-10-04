@@ -3,12 +3,220 @@
 
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GrowthStation</title>
 </head>
 
 <body>
+  <h1>Real-Time Status</h1>
+  <!-- <pre id="status">Waiting for updates...</pre> JSON 데이터를 표시 -->
+  <h2>Last Captured Image:</h2>
+  <div style="display: flex;">
+    <div>
+      <img id="lastImage" src="" alt="No image captured yet" width="500">
+    </div>
+    <div>
+      <table>
+        <tr>
+          <td>Temperature</td>
+          <td id="temp"></td>
+        </tr>
+        <tr>
+          <td>Humidity</td>
+          <td id="hum"></td>
+        </tr>
+      </table>
+      <table>
+        <tr>
+          <td id="LED"></td>
+          <td id="LED_status"></td>
+        </tr>
+        <tr>
+          <td id="FAN"></td>
+          <td id="FAN_status"></td>
+        </tr>
+        <tr>
+          <td id="PUMP"></td>
+          <td id="PUMP_status"></td>
+        </tr>
+      </table>
+    </div>
+  </div>
 
+  <h2>Control Panel</h2>
+  <form id="controlPanel">
+    <div>
+      <h3>LED Settings</h3>
+      <label for="led_start_time">Start Time:</label>
+      <input type="number" id="led_start_time" name="led_start_time" min="0" max="23" required>
+      <label for="led_end_time">End Time:</label>
+      <input type="number" id="led_end_time" name="led_end_time" min="0" max="23" required>
+      <label for="led_interval">Interval (seconds):</label>
+      <input type="number" id="led_interval" name="led_interval" min="1" required>
+    </div>
+
+    <div>
+      <h3>FAN Settings</h3>
+      <label for="fan_start_time">Start Time:</label>
+      <input type="number" id="fan_start_time" name="fan_start_time" min="0" max="23" required>
+      <label for="fan_end_time">End Time:</label>
+      <input type="number" id="fan_end_time" name="fan_end_time" min="0" max="23" required>
+      <label for="fan_interval">Interval (seconds):</label>
+      <input type="number" id="fan_interval" name="fan_interval" min="1" required>
+    </div>
+
+    <div>
+      <h3>PUMP Settings</h3>
+      <label for="pump_start_time">Start Time:</label>
+      <input type="number" id="pump_start_time" name="pump_start_time" min="0" max="23" required>
+      <label for="pump_end_time">End Time:</label>
+      <input type="number" id="pump_end_time" name="pump_end_time" min="0" max="23" required>
+      <label for="pump_interval">Interval (seconds):</label>
+      <input type="number" id="pump_interval" name="pump_interval" min="1" required>
+    </div>
+
+    <div>
+      <button type="submit">Submit</button>
+    </div>
+  </form>
+
+  <script>
+    let socket = new WebSocket("ws://" + location.hostname + ":5000");
+
+    socket.onmessage = function (event)
+    {
+      // 웹소켓으로 받은 데이터를 JSON으로 파싱
+      let message = JSON.parse(event.data);
+      console.log("Message from server:", message);
+
+      // 상태를 status div에 표시
+      // document.getElementById("status").innerText = JSON.stringify(message.data, null, 2);
+
+      // 가장 최근에 찍은 사진의 경로가 있으면 img 태그에 추가
+      if (message.data.Camera)
+      {
+        console.log("Updating last image:", message.data.Camera.latest_image);
+        document.getElementById("lastImage").src = message.data.Camera.latest_image;
+
+        document.getElementById("temp").innerText = message.data.Camera.temperature;
+        document.getElementById("hum").innerText = message.data.Camera.humidity;
+
+      }
+
+      if (message.data.LED)
+      {
+        console.log("Updating LED status:", message.data.LED);
+        document.getElementById("LED").innerText = "LED";
+        document.getElementById("LED_status").innerText = message.data.LED.state;
+      }
+      if (message.data.FAN)
+      {
+        console.log("Updating FAN status:", message.data.FAN);
+        document.getElementById("FAN").innerText = "FAN";
+        document.getElementById("FAN_status").innerText = message.data.FAN.state;
+      }
+      if (message.data.PUMP)
+      {
+        console.log("Updating PUMP status:", message.data.PUMP);
+        document.getElementById("PUMP").innerText = "PUMP";
+        document.getElementById("PUMP_status").innerText = message.data.PUMP.state;
+      }
+    };
+
+    socket.onopen = function (event)
+    {
+      console.log("WebSocket connection established");
+    };
+
+    socket.onclose = function (event)
+    {
+      console.log("WebSocket connection closed");
+    };
+
+    document.getElementById("controlPanel").addEventListener("submit", function (event)
+    {
+      event.preventDefault();
+
+      let data = {
+        LED: {
+          start_time: document.getElementById("led_start_time").value,
+          end_time: document.getElementById("led_end_time").value,
+          interval: document.getElementById("led_interval").value
+        },
+        FAN: {
+          start_time: document.getElementById("fan_start_time").value,
+          end_time: document.getElementById("fan_end_time").value,
+          interval: document.getElementById("fan_interval").value
+        },
+        PUMP: {
+          start_time: document.getElementById("pump_start_time").value,
+          end_time: document.getElementById("pump_end_time").value,
+          interval: document.getElementById("pump_interval").value
+        }
+      };
+
+      console.log("Sending control panel data:", data);
+      socket.send(JSON.stringify(data));
+    });
+
+
+    var save_env = function ()
+    {
+      document.addEventListener("DOMContentLoaded", function ()
+      {
+        var form = document.getElementById("controlPanel");
+
+        form.addEventListener("submit", function (event)
+        {
+          event.preventDefault(); // 폼의 기본 제출 동작을 막음
+
+          // 폼 데이터를 수집
+          var led_start_time = document.getElementById('led_start_time').value;
+          var led_end_time = document.getElementById('led_end_time').value;
+          var led_interval = document.getElementById('led_interval').value;
+
+          var fan_start_time = document.getElementById('fan_start_time').value;
+          var fan_end_time = document.getElementById('fan_end_time').value;
+          var fan_interval = document.getElementById('fan_interval').value;
+
+          var pump_start_time = document.getElementById('pump_start_time').value;
+          var pump_end_time = document.getElementById('pump_end_time').value;
+          var pump_interval = document.getElementById('pump_interval').value;
+
+          var data = new FormData();
+
+          var env = {
+            LED: {
+              start_time: led_start_time,
+              end_time: led_end_time,
+              interval: led_interval
+            },
+            FAN: {
+              start_time: fan_start_time,
+              end_time: fan_end_time,
+              interval: fan_interval
+            },
+            PUMP: {
+              start_time: pump_start_time,
+              end_time: pump_end_time,
+              interval: pump_interval
+            }
+          };
+          data.append('func', 'save_env');
+          data.append('env', JSON.stringify(env));
+
+          POST(API_post, data, function (resp)
+          {
+            if (resp.data)
+              console.log(resp.data);
+            else
+              alert("no message");
+          });
+        })
+      });
+    }
+  </script>
 </body>
 
 </html>

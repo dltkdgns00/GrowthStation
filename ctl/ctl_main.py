@@ -1,7 +1,7 @@
 import os
 from time import sleep, time
 import threading
-import dev_GPIO as gpio
+from dev_GPIO import LED, FAN, PUMP
 from dev_camera import Camera
 from dev_sht31 import SHT31
 from dev_WebSocket import WSOCKET
@@ -34,24 +34,21 @@ def collect_status(devices, stop_event):
 
 if __name__ == "__main__":
     # GPIO 장치 생성 (환경 변수 값으로 생성)
-    led = gpio.dev_GPIO(
+    led = LED(
         pin=17,
         interval=int(LED_INTERVAL),  # 기본값이 숫자인지 확인
-        name="LED",
         start_time=int(LED_START_TIME),
         end_time=int(LED_END_TIME)
     )
-    fan = gpio.dev_GPIO(
+    fan = FAN(
         pin=27,
         interval=int(FAN_INTERVAL),  # 기본값이 숫자인지 확인
-        name="FAN",
         start_time=int(FAN_START_TIME),
         end_time=int(FAN_END_TIME)
     )
-    pump = gpio.dev_GPIO(
+    pump = PUMP(
         pin=22,
         interval=int(PUMP_INTERVAL),  # 기본값이 숫자인지 확인
-        name="PUMP",
         start_time=int(PUMP_START_TIME),
         end_time=int(PUMP_END_TIME)
     )
