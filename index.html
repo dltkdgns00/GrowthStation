@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="res/hive.service.base.js"></script>
   <title>GrowthStation</title>
 </head>
 
@@ -81,46 +82,58 @@
     </div>
   </form>
 
+  <h2>Timelapse Videos</h2>
+
+  <div style="display: flex;">
+    <div id="timelapse_videos"></div>
+    <div style="margin-left: 20px; flex: 1; position: relative; padding-top: 75%;">
+      <iframe id="videoFrame" src="" frameborder="0"
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain;"></iframe>
+    </div>
+  </div>
+
   <script>
+    const API_post = "/www";
+
     let socket = new WebSocket("ws://" + location.hostname + ":5000");
 
     socket.onmessage = function (event)
     {
       // 웹소켓으로 받은 데이터를 JSON으로 파싱
       let message = JSON.parse(event.data);
-      console.log("Message from server:", message);
+      // console.log("Message from server:", message);
 
       // 상태를 status div에 표시
-      // document.getElementById("status").innerText = JSON.stringify(message.data, null, 2);
+      // _("status").innerText = JSON.stringify(message.data, null, 2);
 
       // 가장 최근에 찍은 사진의 경로가 있으면 img 태그에 추가
       if (message.data.Camera)
       {
-        console.log("Updating last image:", message.data.Camera.latest_image);
-        document.getElementById("lastImage").src = message.data.Camera.latest_image;
+        // console.log("Updating last image:", message.data.Camera.latest_image);
+        _("lastImage").src = message.data.Camera.latest_image;
 
-        document.getElementById("temp").innerText = message.data.Camera.temperature;
-        document.getElementById("hum").innerText = message.data.Camera.humidity;
+        _("temp").innerText = message.data.Camera.temperature;
+        _("hum").innerText = message.data.Camera.humidity;
 
       }
 
       if (message.data.LED)
       {
-        console.log("Updating LED status:", message.data.LED);
-        document.getElementById("LED").innerText = "LED";
-        document.getElementById("LED_status").innerText = message.data.LED.state;
+        // console.log("Updating LED status:", message.data.LED);
+        _("LED").innerText = "LED";
+        _("LED_status").innerText = message.data.LED.state;
       }
       if (message.data.FAN)
       {
-        console.log("Updating FAN status:", message.data.FAN);
-        document.getElementById("FAN").innerText = "FAN";
-        document.getElementById("FAN_status").innerText = message.data.FAN.state;
+        // console.log("Updating FAN status:", message.data.FAN);
+        _("FAN").innerText = "FAN";
+        _("FAN_status").innerText = message.data.FAN.state;
       }
       if (message.data.PUMP)
       {
-        console.log("Updating PUMP status:", message.data.PUMP);
-        document.getElementById("PUMP").innerText = "PUMP";
-        document.getElementById("PUMP_status").innerText = message.data.PUMP.state;
+        // console.log("Updating PUMP status:", message.data.PUMP);
+        _("PUMP").innerText = "PUMP";
+        _("PUMP_status").innerText = message.data.PUMP.state;
       }
     };
 
@@ -134,88 +147,89 @@
       console.log("WebSocket connection closed");
     };
 
-    document.getElementById("controlPanel").addEventListener("submit", function (event)
+    _("controlPanel").addEventListener("submit", function (event)
     {
-      event.preventDefault();
+      event.preventDefault(); // 폼의 기본 제출 동작을 막음
 
-      let data = {
+      // 폼 데이터를 수집
+      var led_start_time = _('led_start_time').value;
+      var led_end_time = _('led_end_time').value;
+      var led_interval = _('led_interval').value;
+
+      var fan_start_time = _('fan_start_time').value;
+      var fan_end_time = _('fan_end_time').value;
+      var fan_interval = _('fan_interval').value;
+
+      var pump_start_time = _('pump_start_time').value;
+      var pump_end_time = _('pump_end_time').value;
+      var pump_interval = _('pump_interval').value;
+
+      var data = new FormData();
+
+      var env = {
         LED: {
-          start_time: document.getElementById("led_start_time").value,
-          end_time: document.getElementById("led_end_time").value,
-          interval: document.getElementById("led_interval").value
+          start_time: led_start_time,
+          end_time: led_end_time,
+          interval: led_interval
         },
         FAN: {
-          start_time: document.getElementById("fan_start_time").value,
-          end_time: document.getElementById("fan_end_time").value,
-          interval: document.getElementById("fan_interval").value
+          start_time: fan_start_time,
+          end_time: fan_end_time,
+          interval: fan_interval
         },
         PUMP: {
-          start_time: document.getElementById("pump_start_time").value,
-          end_time: document.getElementById("pump_end_time").value,
-          interval: document.getElementById("pump_interval").value
+          start_time: pump_start_time,
+          end_time: pump_end_time,
+          interval: pump_interval
         }
       };
+      data.append('func', 'save_env');
+      data.append('env', JSON.stringify(env));
 
-      console.log("Sending control panel data:", data);
-      socket.send(JSON.stringify(data));
+      console.log("Sending data to server:", data);
+
+      POST(API_post, data, function (resp)
+      {
+        if (resp.data)
+          console.log(resp.data);
+        else
+          alert("no message");
+      });
+    });
+
+    document.addEventListener("DOMContentLoaded", function ()
+    {
+      var data = new FormData();
+      data.append('func', 'get_timelapse_videos');
+
+      POST(API_post, data, function (resp)
+      {
+        if (resp.data)
+        {
+          const container = document.getElementById("timelapse_videos");
+          container.innerHTML = ""; // 초기화
+
+          resp.data.forEach(video =>
+          {
+            const videoLink = document.createElement("a");
+            videoLink.href = "#";
+            videoLink.innerText = video.name;
+            videoLink.onclick = () =>
+            {
+              const iframe = document.getElementById("videoFrame");
+              iframe.src = video.path;
+            };
+            videoLink.style.display = "block";
+            container.appendChild(videoLink);
+          });
+
+        }
+        else
+          alert("no message");
+      });
     });
 
 
-    var save_env = function ()
-    {
-      document.addEventListener("DOMContentLoaded", function ()
-      {
-        var form = document.getElementById("controlPanel");
-
-        form.addEventListener("submit", function (event)
-        {
-          event.preventDefault(); // 폼의 기본 제출 동작을 막음
-
-          // 폼 데이터를 수집
-          var led_start_time = document.getElementById('led_start_time').value;
-          var led_end_time = document.getElementById('led_end_time').value;
-          var led_interval = document.getElementById('led_interval').value;
-
-          var fan_start_time = document.getElementById('fan_start_time').value;
-          var fan_end_time = document.getElementById('fan_end_time').value;
-          var fan_interval = document.getElementById('fan_interval').value;
-
-          var pump_start_time = document.getElementById('pump_start_time').value;
-          var pump_end_time = document.getElementById('pump_end_time').value;
-          var pump_interval = document.getElementById('pump_interval').value;
-
-          var data = new FormData();
-
-          var env = {
-            LED: {
-              start_time: led_start_time,
-              end_time: led_end_time,
-              interval: led_interval
-            },
-            FAN: {
-              start_time: fan_start_time,
-              end_time: fan_end_time,
-              interval: fan_interval
-            },
-            PUMP: {
-              start_time: pump_start_time,
-              end_time: pump_end_time,
-              interval: pump_interval
-            }
-          };
-          data.append('func', 'save_env');
-          data.append('env', JSON.stringify(env));
-
-          POST(API_post, data, function (resp)
-          {
-            if (resp.data)
-              console.log(resp.data);
-            else
-              alert("no message");
-          });
-        })
-      });
-    }
   </script>
 </body>
 

@@ -1,7 +1,8 @@
 import os
 import json
-from dotenv import load_dotenv, set_key
 import sys
+import subprocess
+import base64
 
 def errlog(a):
     sys.stderr.write(a+"\n")
@@ -46,65 +47,57 @@ def func_status(data):
                         status_data[filename] = f"Error reading file: {str(e)}"
         
         # 성공적으로 파일을 읽고 JSON으로 반환
-        return {"data": status_data, "status": "success"}
+        return resp(status_data, "success")
     
     except Exception as e:
         # 디렉토리 접근이나 다른 에러 발생 시 처리
-        return {"data": f"Error: {str(e)}", "status": "fail"}
-
+        return resp(str(e))
 
 def func_save_env(data):
     """
     POST로 받은 데이터를 바탕으로 .env 파일을 업데이트하는 함수
     """
 
-    # .env 파일 경로 설정
-    env_path = ".env"
+    # 데이터가 비어있는지 확인
+    if not data:
+        return resp("No data received")
 
-    # .env 파일 로드
-    load_dotenv(env_path)
-    
     try:
-        # 데이터가 비어있으면 오류 처리
-        if not data:
-            return {"status": "error", "message": "No data provided"}
+        # env 데이터를 JSON 문자열로 변환
+        env_data = json.dumps(data['env'])  # dict -> JSON 문자열로 변환
 
-        # LED 설정
-        if 'LED_INTERVAL' in data['env']:
-            set_key(env_path, 'LED_INTERVAL', data['env']['LED_INTERVAL'])
-        if 'LED_START_TIME' in data['env']:
-            set_key(env_path, 'LED_START_TIME', data['env']['LED_START_TIME'])
-        if 'LED_END_TIME' in data['env']:
-            set_key(env_path, 'LED_END_TIME', data['env']['LED_END_TIME'])
+        # save_env.py 파일을 sudo로 실행
+        result = subprocess.run(
+            ['sudo', 'python3', 'ctl/lib/save_env.py', env_data], 
+            text=True,  # 문자열로 출력 및 입력을 처리
+            capture_output=True  # 표준 출력과 오류를 캡처
+        )
 
-        # FAN 설정
-        if 'FAN_INTERVAL' in data['env']:
-            set_key(env_path, 'FAN_INTERVAL', data['env']['FAN_INTERVAL'])
-        if 'FAN_START_TIME' in data['env']:
-            set_key(env_path, 'FAN_START_TIME', data['env']['FAN_START_TIME'])
-        if 'FAN_END_TIME' in data['env']:
-            set_key(env_path, 'FAN_END_TIME', data['env']['FAN_END_TIME'])
-
-        # PUMP 설정
-        if 'PUMP_INTERVAL' in data['env']:
-            set_key(env_path, 'PUMP_INTERVAL', data['env']['PUMP_INTERVAL'])
-        if 'PUMP_START_TIME' in data['env']:
-            set_key(env_path, 'PUMP_START_TIME', data['env']['PUMP_START_TIME'])
-        if 'PUMP_END_TIME' in data['env']:
-            set_key(env_path, 'PUMP_END_TIME', data['env']['PUMP_END_TIME'])
-
-        # 카메라 설정
-        if 'CAMERA_INTERVAL' in data['env']:
-            set_key(env_path, 'CAMERA_INTERVAL', data['env']['CAMERA_INTERVAL'])
-
-        # 온습도 센서 설정
-        if 'SHT31_ENABLED' in data['env']:
-            set_key(env_path, 'SHT31_ENABLED', data['env']['SHT31_ENABLED'])
-
-        # 변경된 .env 파일 로드
-        load_dotenv(env_path)
-
-        return {"status": "success", "message": "Environment variables updated successfully"}
+        if result.returncode != 0:
+            return resp(f"Error: {result.stderr}")
+        else:
+            return resp(result.stdout, "success")
 
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return resp(str(e))
+
+
+def func_get_timelapse_videos(data):
+    # 타임랩스 비디오가 저장된 경로
+    directory = '/home/pi/GrowthStation/static/timelapse'
+    video_data = []
+
+    try:
+        # 디렉토리 내 모든 파일을 순차적으로 읽기
+        for filename in os.listdir(directory):
+            file_path = os.path.join('/static/timelapse', filename)
+            # 파일이 존재하고 읽기 가능한 경우
+            if os.path.isfile(os.path.join(directory, filename)):
+                video_data.append({"name": filename, "path": file_path})
+        
+        # 성공적으로 파일을 읽고 JSON으로 반환
+        return resp(video_data, "success")
+    
+    except Exception as e:
+        # 디렉토리 접근이나 다른 에러 발생 시 처리
+        return resp(str(e), "fail")

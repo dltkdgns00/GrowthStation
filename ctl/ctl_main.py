@@ -1,5 +1,5 @@
 import os
-from time import sleep, time
+from time import sleep
 import threading
 from dev_GPIO import LED, FAN, PUMP
 from dev_camera import Camera
