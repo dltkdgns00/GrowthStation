@@ -9,37 +9,35 @@ def update_env(data):
     load_dotenv(env_path)
 
     # JSON 문자열을 딕셔너리로 변환
-    json_data = json.loads(json.dumps(data))  # JSON 문자열을 딕셔너리로 변환
+    data = json.loads(data)  # JSON 문자열을 딕셔너리로 변환    
 
-    print(json_data)
-    print(json_data['LED'])
     
-    # # 'LED' 설정 접근
-    # if 'LED' in data:
-    #     if 'interval' in data['LED']:
-    #         set_key(env_path, 'LED_INTERVAL', str(data['LED']['interval']))
-    #     if 'start_time' in data['LED']:
-    #         set_key(env_path, 'LED_START_TIME', str(data['LED']['start_time']))
-    #     if 'end_time' in data['LED']:
-    #         set_key(env_path, 'LED_END_TIME', str(data['LED']['end_time']))
+    # 'LED' 설정 접근
+    if 'LED' in data:
+        if 'interval' in data['LED']:
+            set_key(env_path, 'LED_INTERVAL', str(data['LED']['interval']))
+        if 'start_time' in data['LED']:
+            set_key(env_path, 'LED_START_TIME', str(data['LED']['start_time']))
+        if 'end_time' in data['LED']:
+            set_key(env_path, 'LED_END_TIME', str(data['LED']['end_time']))
 
-    # # 'FAN' 설정 접근
-    # if 'FAN' in data:
-    #     if 'interval' in data['FAN']:
-    #         set_key(env_path, 'FAN_INTERVAL', str(data['FAN']['interval']))
-    #     if 'start_time' in data['FAN']:
-    #         set_key(env_path, 'FAN_START_TIME', str(data['FAN']['start_time']))
-    #     if 'end_time' in data['FAN']:
-    #         set_key(env_path, 'FAN_END_TIME', str(data['FAN']['end_time']))
+    # 'FAN' 설정 접근
+    if 'FAN' in data:
+        if 'interval' in data['FAN']:
+            set_key(env_path, 'FAN_INTERVAL', str(data['FAN']['interval']))
+        if 'start_time' in data['FAN']:
+            set_key(env_path, 'FAN_START_TIME', str(data['FAN']['start_time']))
+        if 'end_time' in data['FAN']:
+            set_key(env_path, 'FAN_END_TIME', str(data['FAN']['end_time']))
 
-    # # 'PUMP' 설정 접근
-    # if 'PUMP' in data:
-    #     if 'interval' in data['PUMP']:
-    #         set_key(env_path, 'PUMP_INTERVAL', str(data['PUMP']['interval']))
-    #     if 'start_time' in data['PUMP']:
-    #         set_key(env_path, 'PUMP_START_TIME', str(data['PUMP']['start_time']))
-    #     if 'end_time' in data['PUMP']:
-    #         set_key(env_path, 'PUMP_END_TIME', str(data['PUMP']['end_time']))
+    # 'PUMP' 설정 접근
+    if 'PUMP' in data:
+        if 'interval' in data['PUMP']:
+            set_key(env_path, 'PUMP_INTERVAL', str(data['PUMP']['interval']))
+        if 'start_time' in data['PUMP']:
+            set_key(env_path, 'PUMP_START_TIME', str(data['PUMP']['start_time']))
+        if 'end_time' in data['PUMP']:
+            set_key(env_path, 'PUMP_END_TIME', str(data['PUMP']['end_time']))
 
 if __name__ == "__main__":
     try:

@@ -10,9 +10,9 @@
 </head>
 
 <body>
-  <h1>Real-Time Status</h1>
+  <h1>식물 생육 모니터링</h1>
   <!-- <pre id="status">Waiting for updates...</pre> JSON 데이터를 표시 -->
-  <h2>Last Captured Image:</h2>
+  <h2>최신 사진</h2>
   <div style="display: flex;">
     <div>
       <img id="lastImage" src="" alt="No image captured yet" width="500">
@@ -20,11 +20,11 @@
     <div>
       <table>
         <tr>
-          <td>Temperature</td>
+          <td>온도</td>
           <td id="temp"></td>
         </tr>
         <tr>
-          <td>Humidity</td>
+          <td>습도</td>
           <td id="hum"></td>
         </tr>
       </table>
@@ -48,30 +48,30 @@
   <h2>Control Panel</h2>
   <form id="controlPanel">
     <div>
-      <h3>LED Settings</h3>
-      <label for="led_start_time">Start Time:</label>
+      LED 제어
+      <label for="led_start_time">시작</label>
       <input type="number" id="led_start_time" name="led_start_time" min="0" max="23" required>
-      <label for="led_end_time">End Time:</label>
+      <label for="led_end_time">종료</label>
       <input type="number" id="led_end_time" name="led_end_time" min="0" max="23" required>
-      <label for="led_interval">Interval (seconds):</label>
+      <label for="led_interval">Interval (seconds):</label> <!-- on off 추가 -->
       <input type="number" id="led_interval" name="led_interval" min="1" required>
     </div>
 
     <div>
-      <h3>FAN Settings</h3>
-      <label for="fan_start_time">Start Time:</label>
+      FAN 제어
+      <label for="fan_start_time">시작</label>
       <input type="number" id="fan_start_time" name="fan_start_time" min="0" max="23" required>
-      <label for="fan_end_time">End Time:</label>
+      <label for="fan_end_time">종료</label>
       <input type="number" id="fan_end_time" name="fan_end_time" min="0" max="23" required>
       <label for="fan_interval">Interval (seconds):</label>
       <input type="number" id="fan_interval" name="fan_interval" min="1" required>
     </div>
 
     <div>
-      <h3>PUMP Settings</h3>
-      <label for="pump_start_time">Start Time:</label>
+      PUMP 제어
+      <label for="pump_start_time">시작</label>
       <input type="number" id="pump_start_time" name="pump_start_time" min="0" max="23" required>
-      <label for="pump_end_time">End Time:</label>
+      <label for="pump_end_time">종료</label>
       <input type="number" id="pump_end_time" name="pump_end_time" min="0" max="23" required>
       <label for="pump_interval">Interval (seconds):</label>
       <input type="number" id="pump_interval" name="pump_interval" min="1" required>
@@ -82,7 +82,7 @@
     </div>
   </form>
 
-  <h2>Timelapse Videos</h2>
+  <h2>Timelapse Videos</h2> <!-- 영상은 팝업을 띄운다 -->
 
   <div style="display: flex;">
     <div id="timelapse_videos"></div>
@@ -95,7 +95,7 @@
   <script>
     const API_post = "/www";
 
-    let socket = new WebSocket("ws://" + location.hostname + ":5000");
+    let socket = new WebSocket("ws://" + location.hostname + ":" + location.port + "/wss/");
 
     socket.onmessage = function (event)
     {
@@ -121,19 +121,40 @@
       {
         // console.log("Updating LED status:", message.data.LED);
         _("LED").innerText = "LED";
-        _("LED_status").innerText = message.data.LED.state;
+        if (message.data.LED.state)
+        {
+          _("LED_status").innerText = "ON";
+        }
+        else
+        {
+          _("LED_status").innerText = "OFF";
+        }
       }
       if (message.data.FAN)
       {
         // console.log("Updating FAN status:", message.data.FAN);
         _("FAN").innerText = "FAN";
-        _("FAN_status").innerText = message.data.FAN.state;
+        if (message.data.FAN.state)
+        {
+          _("FAN_status").innerText = "ON";
+        }
+        else
+        {
+          _("FAN_status").innerText = "OFF";
+        }
       }
       if (message.data.PUMP)
       {
         // console.log("Updating PUMP status:", message.data.PUMP);
         _("PUMP").innerText = "PUMP";
-        _("PUMP_status").innerText = message.data.PUMP.state;
+        if (message.data.PUMP.state)
+        {
+          _("PUMP_status").innerText = "ON";
+        }
+        else
+        {
+          _("PUMP_status").innerText = "OFF";
+        }
       }
     };
 

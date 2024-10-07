@@ -1,29 +1,45 @@
 import os
-from time import sleep
+from time import sleep, time
 import threading
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 from dev_GPIO import LED, FAN, PUMP
 from dev_camera import Camera
 from dev_sht31 import SHT31
 from dev_WebSocket import WSOCKET
 from dotenv import load_dotenv
 
-# .env 파일 로드
+# .env 파일을 처음 로드
 load_dotenv()
 
-# 환경 변수 로드 (환경 변수가 없는 경우 기본값을 지정)
-LED_INTERVAL = os.getenv('LED_INTERVAL', 1)
-LED_START_TIME = os.getenv('LED_START_TIME', 0)
-LED_END_TIME = os.getenv('LED_END_TIME', 17)
+# 환경 변수 로드 함수 (필요할 때마다 호출하여 최신 값을 반영)
+def load_env_variables():
+    global LED_INTERVAL, LED_START_TIME, LED_END_TIME
+    global FAN_INTERVAL, FAN_START_TIME, FAN_END_TIME
+    global PUMP_INTERVAL, PUMP_START_TIME, PUMP_END_TIME
+    global CAMERA_INTERVAL
+    
+    LED_INTERVAL = os.getenv('LED_INTERVAL', 1)
+    LED_START_TIME = os.getenv('LED_START_TIME', 0)
+    LED_END_TIME = os.getenv('LED_END_TIME', 17)
+    
+    FAN_INTERVAL = os.getenv('FAN_INTERVAL', 2)
+    FAN_START_TIME = os.getenv('FAN_START_TIME', 6)
+    FAN_END_TIME = os.getenv('FAN_END_TIME', 18)
+    
+    PUMP_INTERVAL = os.getenv('PUMP_INTERVAL', 3)
+    PUMP_START_TIME = os.getenv('PUMP_START_TIME', 9)
+    PUMP_END_TIME = os.getenv('PUMP_END_TIME', 21)
+    
+    CAMERA_INTERVAL = os.getenv('CAMERA_INTERVAL', 10)
 
-FAN_INTERVAL = os.getenv('FAN_INTERVAL', 2)
-FAN_START_TIME = os.getenv('FAN_START_TIME', 6)
-FAN_END_TIME = os.getenv('FAN_END_TIME', 18)
-
-PUMP_INTERVAL = os.getenv('PUMP_INTERVAL', 3)
-PUMP_START_TIME = os.getenv('PUMP_START_TIME', 9)
-PUMP_END_TIME = os.getenv('PUMP_END_TIME', 21)
-
-CAMERA_INTERVAL = os.getenv('CAMERA_INTERVAL', 10)
+# .env 파일이 변경될 때 호출되는 핸들러 클래스
+class EnvFileChangeHandler(FileSystemEventHandler):
+    def on_modified(self, event):
+        if event.src_path.endswith('.env'):
+            print(".env 파일이 변경되었습니다. 새로 로드합니다.")
+            load_dotenv()  # .env 파일 다시 로드
+            load_env_variables()  # 환경 변수 다시 로드
 
 # 시스템 모니터링 프로세스 구성
 def collect_status(devices, stop_event):
@@ -33,22 +49,32 @@ def collect_status(devices, stop_event):
         sleep(1)  # 1초 간격으로 loop 호출
 
 if __name__ == "__main__":
+    # 환경 변수 처음 로드
+    load_env_variables()
+
+    # .env 파일 감시 설정
+    path_to_watch = os.path.dirname(os.path.abspath('.env'))
+    event_handler = EnvFileChangeHandler()
+    observer = Observer()
+    observer.schedule(event_handler, path=path_to_watch, recursive=False)
+    observer.start()
+
     # GPIO 장치 생성 (환경 변수 값으로 생성)
     led = LED(
         pin=17,
-        interval=int(LED_INTERVAL),  # 기본값이 숫자인지 확인
+        interval=int(LED_INTERVAL),
         start_time=int(LED_START_TIME),
         end_time=int(LED_END_TIME)
     )
     fan = FAN(
         pin=27,
-        interval=int(FAN_INTERVAL),  # 기본값이 숫자인지 확인
+        interval=int(FAN_INTERVAL),
         start_time=int(FAN_START_TIME),
         end_time=int(FAN_END_TIME)
     )
     pump = PUMP(
         pin=22,
-        interval=int(PUMP_INTERVAL),  # 기본값이 숫자인지 확인
+        interval=int(PUMP_INTERVAL),
         start_time=int(PUMP_START_TIME),
         end_time=int(PUMP_END_TIME)
     )
@@ -57,15 +83,14 @@ if __name__ == "__main__":
     sht31_sensor = SHT31()
 
     # 카메라 생성 (온습도 센서 데이터 콜백 주입)
-    camera_interval = int(CAMERA_INTERVAL)
     camera = Camera(
-        interval=camera_interval,
-        sht31_callback=sht31_sensor.read_sht31  # DI 방식으로 온습도 데이터 주입
+        interval=int(CAMERA_INTERVAL),
+        sht31_callback=sht31_sensor.read_sht31
     )
 
     wSocket = WSOCKET()
 
-    devices = [led, fan, pump, camera, wSocket]  # 모든 장치 리스트
+    devices = [led, fan, pump, camera, wSocket]
 
     # 스레드 종료 이벤트 설정
     stop_event = threading.Event()
@@ -89,3 +114,7 @@ if __name__ == "__main__":
         # 온습도 센서 정리
         sht31_sensor.cleanup()
         print("프로그램이 안전하게 종료되었습니다.")
+
+        # 파일 감시 종료
+        observer.stop()
+        observer.join()

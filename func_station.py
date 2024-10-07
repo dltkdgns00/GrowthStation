@@ -52,7 +52,6 @@ def func_status(data):
     except Exception as e:
         # 디렉토리 접근이나 다른 에러 발생 시 처리
         return resp(str(e))
-
 def func_save_env(data):
     """
     POST로 받은 데이터를 바탕으로 .env 파일을 업데이트하는 함수
@@ -63,12 +62,16 @@ def func_save_env(data):
         return resp("No data received")
 
     try:
-        # env 데이터를 JSON 문자열로 변환
-        env_data = json.dumps(data['env'])  # dict -> JSON 문자열로 변환
+        # 웹에서 받은 data['env']는 JSON 문자열로 되어있을 수 있음
+        # 이를 Python 딕셔너리로 변환해줌
+        env_data = json.loads(data['env'])
+
+        # 다시 JSON 문자열로 변환하여 저장할 준비
+        env_data_str = json.dumps(env_data)  # dict -> JSON 문자열로 변환
 
         # save_env.py 파일을 sudo로 실행
         result = subprocess.run(
-            ['sudo', 'python3', 'ctl/lib/save_env.py', env_data], 
+            ['sudo', 'python3', 'ctl/lib/save_env.py', env_data_str], 
             text=True,  # 문자열로 출력 및 입력을 처리
             capture_output=True  # 표준 출력과 오류를 캡처
         )
