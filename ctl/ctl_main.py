@@ -12,6 +12,12 @@ from dotenv import load_dotenv
 # .env 파일을 처음 로드
 load_dotenv()
 
+# 시:분 형식의 시간을 파싱하는 함수
+def parse_time(time_str):
+    """ 'HH:MM' 형식의 문자열을 시, 분으로 나눠서 반환 """
+    hour, minute = map(int, time_str.split(":"))
+    return hour, minute
+
 # 환경 변수 로드 함수 (필요할 때마다 호출하여 최신 값을 반영)
 def load_env_variables():
     global LED_ON, LED_OFF, LED_START_TIME, LED_END_TIME
@@ -19,22 +25,22 @@ def load_env_variables():
     global PUMP_ON, PUMP_OFF, PUMP_START_TIME, PUMP_END_TIME
     global CAMERA_INTERVAL
     
-    LED_ON = os.getenv('LED_ON', 1)
-    LED_OFF = os.getenv('LED_OFF', 0)
-    LED_START_TIME = os.getenv('LED_START_TIME', 0)
-    LED_END_TIME = os.getenv('LED_END_TIME', 23)
+    LED_ON = int(os.getenv('LED_ON', 1))
+    LED_OFF = int(os.getenv('LED_OFF', 0))
+    LED_START_TIME = parse_time(os.getenv('LED_START_TIME', '0:0'))
+    LED_END_TIME = parse_time(os.getenv('LED_END_TIME', '23:59'))
     
-    FAN_ON = os.getenv('FAN_ON', 1)
-    FAN_OFF = os.getenv('FAN_OFF', 0)
-    FAN_START_TIME = os.getenv('FAN_START_TIME', 6)
-    FAN_END_TIME = os.getenv('FAN_END_TIME', 23)
+    FAN_ON = int(os.getenv('FAN_ON', 1))
+    FAN_OFF = int(os.getenv('FAN_OFF', 0))
+    FAN_START_TIME = parse_time(os.getenv('FAN_START_TIME', '6:0'))
+    FAN_END_TIME = parse_time(os.getenv('FAN_END_TIME', '23:59'))
     
-    PUMP_ON = os.getenv('PUMP_ON', 1)
-    PUMP_OFF = os.getenv('PUMP_OFF', 0)
-    PUMP_START_TIME = os.getenv('PUMP_START_TIME', 9)
-    PUMP_END_TIME = os.getenv('PUMP_END_TIME', 23)
+    PUMP_ON = int(os.getenv('PUMP_ON', 1))
+    PUMP_OFF = int(os.getenv('PUMP_OFF', 0))
+    PUMP_START_TIME = parse_time(os.getenv('PUMP_START_TIME', '9:0'))
+    PUMP_END_TIME = parse_time(os.getenv('PUMP_END_TIME', '23:59'))
     
-    CAMERA_INTERVAL = os.getenv('CAMERA_INTERVAL', 10)
+    CAMERA_INTERVAL = int(os.getenv('CAMERA_INTERVAL', 10))
 
 # .env 파일이 변경될 때 호출되는 핸들러 클래스
 class EnvFileChangeHandler(FileSystemEventHandler):
@@ -65,24 +71,24 @@ if __name__ == "__main__":
     # GPIO 장치 생성 (환경 변수 값으로 생성)
     led = LED(
         pin=17,
-        on_time=int(LED_ON),
-        off_time=int(LED_OFF),
-        start_time=int(LED_START_TIME),
-        end_time=int(LED_END_TIME)
+        on_time=LED_ON,
+        off_time=LED_OFF,
+        start_time=LED_START_TIME,
+        end_time=LED_END_TIME
     )
     fan = FAN(
         pin=27,
-        on_time=int(FAN_ON),
-        off_time=int(FAN_OFF),
-        start_time=int(FAN_START_TIME),
-        end_time=int(FAN_END_TIME)
+        on_time=FAN_ON,
+        off_time=FAN_OFF,
+        start_time=FAN_START_TIME,
+        end_time=FAN_END_TIME
     )
     pump = PUMP(
         pin=22,
-        on_time=int(PUMP_ON),
-        off_time=int(PUMP_OFF),
-        start_time=int(PUMP_START_TIME),
-        end_time=int(PUMP_END_TIME)
+        on_time=PUMP_ON,
+        off_time=PUMP_OFF,
+        start_time=PUMP_START_TIME,
+        end_time=PUMP_END_TIME
     )
 
     # 온습도 센서 인스턴스 생성
@@ -90,7 +96,7 @@ if __name__ == "__main__":
 
     # 카메라 생성 (온습도 센서 데이터 콜백 주입)
     camera = Camera(
-        interval=int(CAMERA_INTERVAL),
+        interval=CAMERA_INTERVAL,
         sht31_callback=sht31_sensor.read_sht31
     )
 
