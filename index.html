@@ -6,7 +6,54 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="res/hive.service.base.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <title>GrowthStation</title>
+
+  <style>
+    /* 모달 스타일 */
+    .modal {
+      display: none;
+      /* 기본적으로 모달은 숨겨짐 */
+      position: fixed;
+      z-index: 1;
+      padding-top: 60px;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+      background-color: white;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 800px;
+    }
+
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    #videoFrame {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      /* 또는 cover */
+    }
+  </style>
 </head>
 
 <body>
@@ -112,13 +159,33 @@
     </div>
   </form>
 
-  <h2>Timelapse Videos</h2> <!-- 영상은 팝업을 띄운다 -->
+  <h2>날짜별 타임랩스 및 데이터</h2>
+  <table id="timelapseTable">
+    <thead>
+      <tr>
+        <th>날짜</th>
+        <th>타임랩스 영상</th>
+        <th>온습도 데이터 그래프</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- JS로 채워질 테이블 -->
+    </tbody>
+  </table>
 
-  <div style="display: flex;">
-    <div id="timelapse_videos"></div>
-    <div style="margin-left: 20px; flex: 1; position: relative; padding-top: 75%;">
-      <iframe id="videoFrame" src="" frameborder="0"
-        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain;"></iframe>
+  <!-- Graph Modal -->
+  <div id="graphModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeGraphModal()">&times;</span>
+      <canvas id="dataGraph"></canvas>
+    </div>
+  </div>
+
+  <!-- Video Modal -->
+  <div id="videoModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeVideoModal()">&times;</span>
+      <video id="videoFrame" controls style="width: 100%; height: auto; object-fit: contain;"></video>
     </div>
   </div>
 
@@ -129,7 +196,7 @@
 
     document.addEventListener("DOMContentLoaded", function ()
     {
-      get_timelapse_videos();
+      loadTimelapseData();
       get_env_data();
     });
 
@@ -270,7 +337,6 @@
       {
         if (resp.data)
         {
-          console.log(resp.data);
           get_env_data();
         }
         else
@@ -280,37 +346,183 @@
       });
     });
 
-    var get_timelapse_videos = function ()
+    // 타임랩스 및 온습도 데이터를 테이블에 표시
+    function loadTimelapseData()
     {
       var data = new FormData();
-      data.append('func', 'get_timelapse_videos');
+      data.append('func', 'get_timelapse_data');
 
       POST(API_post, data, function (resp)
       {
         if (resp.data)
         {
-          const container = document.getElementById("timelapse_videos");
-          container.innerHTML = ""; // 초기화
+          const tableBody = document.querySelector("#timelapseTable tbody");
+          tableBody.innerHTML = ""; // 초기화
 
           resp.data.forEach(video =>
           {
+            const row = document.createElement("tr");
+
+            // 날짜 컬럼
+            const dateCell = document.createElement("td");
+            dateCell.innerText = video.date;
+            row.appendChild(dateCell);
+
+            // 타임랩스 영상 컬럼
+            const videoCell = document.createElement("td");
             const videoLink = document.createElement("a");
             videoLink.href = "#";
-            videoLink.innerText = video.name;
-            videoLink.onclick = () =>
+            videoLink.innerText = "타임랩스 보기";
+            videoLink.onclick = function ()
             {
-              const iframe = document.getElementById("videoFrame");
-              iframe.src = video.path;
+              openVideoModal(video.path);  // 영상 팝업 열기
             };
-            videoLink.style.display = "block";
-            container.appendChild(videoLink);
-          });
+            videoCell.appendChild(videoLink);
+            row.appendChild(videoCell);
 
-        }
-        else
+            // 온습도 데이터 그래프 컬럼
+            const graphCell = document.createElement("td");
+            const graphLink = document.createElement("a");
+            graphLink.href = "#";
+            graphLink.innerText = "온습도 그래프 보기";
+            graphLink.onclick = function ()
+            {
+              loadTemperatureHumidityData(video.csv_path);  // 그래프 팝업 열기
+            };
+            graphCell.appendChild(graphLink);
+            row.appendChild(graphCell);
+
+            tableBody.appendChild(row);
+          });
+        } else
+        {
           alert("no message");
+        }
       });
     }
+
+    // 타임랩스 영상 모달 열기
+    function openVideoModal(videoPath)
+    {
+      closeGraphModal(); // 그래프 모달을 닫음
+      document.getElementById("videoFrame").src = videoPath;
+      document.getElementById("videoModal").style.display = "flex";
+    }
+
+    // 타임랩스 영상 모달 닫기
+    function closeVideoModal()
+    {
+      document.getElementById("videoFrame").src = "";
+      document.getElementById("videoModal").style.display = "none";
+    }
+
+    // 온습도 그래프 모달 열기
+    function openGraphModal()
+    {
+      closeVideoModal(); // 비디오 모달을 닫음
+      document.getElementById("graphModal").style.display = "flex";
+    }
+
+    // 온습도 그래프 모달 닫기
+    function closeGraphModal()
+    {
+      document.getElementById("graphModal").style.display = "none";
+    }
+
+    // 온습도 데이터를 로드하여 그래프 생성
+    function loadTemperatureHumidityData(csvPath)
+    {
+      var data = new FormData();
+      data.append('func', 'get_temperature_humidity_data');
+      data.append('csv_path', csvPath);
+
+      POST(API_post, data, function (resp)
+      {
+        if (resp.data)
+        {
+          const csvData = resp.data;  // CSV 데이터
+          const tempData = [];
+          const humData = [];
+          const timeLabels = [];
+
+          // resp.data가 배열 형태인지 확인
+          if (Array.isArray(csvData))
+          {
+
+            csvData.forEach(row =>
+            {
+              timeLabels.push(row.Timestamp);
+              tempData.push(parseFloat(row["Temperature (°C)"]));
+              humData.push(parseFloat(row["Humidity (%)"]));
+            });
+
+            // 그래프 그리기 함수 호출
+            renderGraph(timeLabels, tempData, humData);
+
+            // 그래프 모달 열기
+            document.getElementById("graphModal").style.display = "block";
+          } else
+          {
+            alert("CSV 데이터 형식이 잘못되었습니다.");
+          }
+        } else
+        {
+          alert("No data available");
+        }
+      });
+    }
+
+    let chartInstance = null;
+
+    function renderGraph(labels, tempData, humData)
+    {
+      const ctx = document.getElementById('dataGraph').getContext('2d');
+
+      // 기존 그래프가 있으면 제거
+      if (chartInstance)
+      {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: '온도 (°C)',
+              data: tempData,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              fill: false
+            },
+            {
+              label: '습도 (%)',
+              data: humData,
+              borderColor: 'rgba(54, 162, 235, 1)',
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: '시간'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: '값'
+              }
+            }
+          }
+        }
+      });
+    }
+
 
     var get_env_data = function ()
     {

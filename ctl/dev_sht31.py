@@ -19,7 +19,7 @@ class SHT31(DevPrototype):
 
     def get_csv_filename(self):
         """ 현재 날짜에 맞는 CSV 파일 이름을 생성 """
-        current_date = datetime.now().strftime("%Y-%m-%d")
+        current_date = datetime.now().strftime("%Y%m%d")
         return f"/home/pi/GrowthStation/static/data/temperature_humidity_log_{current_date}.csv"
 
     def initialize_csv(self, file_path):

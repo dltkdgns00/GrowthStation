@@ -2,7 +2,7 @@ import os
 import json
 import sys
 import subprocess
-import base64
+import csv
 
 def errlog(a):
     sys.stderr.write(a+"\n")
@@ -106,26 +106,75 @@ def func_get_env(data):
         return resp(str(e))
 
 
-def func_get_timelapse_videos(data):
-    # 타임랩스 비디오가 저장된 경로
-    directory = '/home/pi/GrowthStation/static/timelapse'
+def func_get_timelapse_data(data):
+    # 타임랩스 비디오와 온습도 로그 파일이 저장된 경로
+    video_directory = '/home/pi/GrowthStation/static/timelapse'
+    csv_directory = '/home/pi/GrowthStation/static/data'
     video_data = []
 
     try:
         # 디렉토리 내 모든 파일을 순차적으로 읽기
-        for filename in os.listdir(directory):
+        for filename in os.listdir(video_directory):
             file_path = os.path.join('/static/timelapse', filename)
+            
             # 파일이 존재하고 읽기 가능한 경우
-            if os.path.isfile(os.path.join(directory, filename)):
-                video_data.append({"name": filename, "path": file_path})
+            if os.path.isfile(os.path.join(video_directory, filename)):
+                # 파일 이름에서 날짜를 추출 (가정: 파일명에 날짜 포함됨)
+                try:
+                    # 예: video_20241005.mp4에서 날짜 추출
+                    date_str = filename.split('_')[1].split('.')[0]
+
+                    # 해당 날짜에 맞는 온습도 CSV 파일 경로 설정
+                    csv_filename = f"temperature_humidity_log_{date_str}.csv"
+                    csv_path = os.path.join('/static/data', csv_filename)
+                    
+                    # 해당 날짜에 CSV 파일이 존재하는지 확인
+                    if os.path.exists(os.path.join(csv_directory, csv_filename)):
+                        video_data.append({
+                            "date": date_str,  # 날짜를 date으로 사용
+                            "path": file_path,
+                            "csv_path": csv_path
+                        })
+                    else:
+                        video_data.append({
+                            "date": date_str,
+                            "path": file_path,
+                            "csv_path": None  # CSV가 없을 경우 None
+                        })
+                except Exception as e:
+                    # 날짜 추출 또는 파일명 처리 오류가 있을 때 예외 처리
+                    continue
+
+            print(video_data)   
         
         # 성공적으로 파일을 읽고 JSON으로 반환
         return resp(video_data, "success")
     
     except Exception as e:
         # 디렉토리 접근이나 다른 에러 발생 시 처리
-        return resp(str(e))
+        return resp(str(e), "fail")
+
+def func_get_temperature_humidity_data(data):
+    csv_path = data.get('csv_path')
+
+    csv_path = '/home/pi/GrowthStation' + csv_path
     
+    if not csv_path or not os.path.exists(csv_path):
+        return resp("CSV file not found", "fail")
+
+    try:
+        with open(csv_path, mode='r', encoding='utf-8') as file:
+            csv_reader = csv.DictReader(file)
+            csv_data = [row for row in csv_reader]
+
+        print(csv_data)
+        
+        # JSON으로 변환
+        return resp(csv_data, "success")
+    
+    except Exception as e:
+        return resp(f"Error reading CSV: {str(e)}", "fail")
+
 
 if __name__ == "__main__":
-    func_get_env({})
+    func_get_temperature_humidity_data({'csv_path': '/static/data/temperature_humidity_log_20241007.csv'})
