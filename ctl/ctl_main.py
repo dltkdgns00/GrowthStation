@@ -14,22 +14,25 @@ load_dotenv()
 
 # 환경 변수 로드 함수 (필요할 때마다 호출하여 최신 값을 반영)
 def load_env_variables():
-    global LED_INTERVAL, LED_START_TIME, LED_END_TIME
-    global FAN_INTERVAL, FAN_START_TIME, FAN_END_TIME
-    global PUMP_INTERVAL, PUMP_START_TIME, PUMP_END_TIME
+    global LED_ON, LED_OFF, LED_START_TIME, LED_END_TIME
+    global FAN_ON, FAN_OFF, FAN_START_TIME, FAN_END_TIME
+    global PUMP_ON, PUMP_OFF, PUMP_START_TIME, PUMP_END_TIME
     global CAMERA_INTERVAL
     
-    LED_INTERVAL = os.getenv('LED_INTERVAL', 1)
+    LED_ON = os.getenv('LED_ON', 1)
+    LED_OFF = os.getenv('LED_OFF', 0)
     LED_START_TIME = os.getenv('LED_START_TIME', 0)
-    LED_END_TIME = os.getenv('LED_END_TIME', 17)
+    LED_END_TIME = os.getenv('LED_END_TIME', 23)
     
-    FAN_INTERVAL = os.getenv('FAN_INTERVAL', 2)
+    FAN_ON = os.getenv('FAN_ON', 1)
+    FAN_OFF = os.getenv('FAN_OFF', 0)
     FAN_START_TIME = os.getenv('FAN_START_TIME', 6)
-    FAN_END_TIME = os.getenv('FAN_END_TIME', 18)
+    FAN_END_TIME = os.getenv('FAN_END_TIME', 23)
     
-    PUMP_INTERVAL = os.getenv('PUMP_INTERVAL', 3)
+    PUMP_ON = os.getenv('PUMP_ON', 1)
+    PUMP_OFF = os.getenv('PUMP_OFF', 0)
     PUMP_START_TIME = os.getenv('PUMP_START_TIME', 9)
-    PUMP_END_TIME = os.getenv('PUMP_END_TIME', 21)
+    PUMP_END_TIME = os.getenv('PUMP_END_TIME', 23)
     
     CAMERA_INTERVAL = os.getenv('CAMERA_INTERVAL', 10)
 
@@ -62,19 +65,22 @@ if __name__ == "__main__":
     # GPIO 장치 생성 (환경 변수 값으로 생성)
     led = LED(
         pin=17,
-        interval=int(LED_INTERVAL),
+        on_time=int(LED_ON),
+        off_time=int(LED_OFF),
         start_time=int(LED_START_TIME),
         end_time=int(LED_END_TIME)
     )
     fan = FAN(
         pin=27,
-        interval=int(FAN_INTERVAL),
+        on_time=int(FAN_ON),
+        off_time=int(FAN_OFF),
         start_time=int(FAN_START_TIME),
         end_time=int(FAN_END_TIME)
     )
     pump = PUMP(
         pin=22,
-        interval=int(PUMP_INTERVAL),
+        on_time=int(PUMP_ON),
+        off_time=int(PUMP_OFF),
         start_time=int(PUMP_START_TIME),
         end_time=int(PUMP_END_TIME)
     )

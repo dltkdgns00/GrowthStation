@@ -49,32 +49,62 @@
   <form id="controlPanel">
     <div>
       LED 제어
-      <label for="led_start_time">시작</label>
-      <input type="number" id="led_start_time" name="led_start_time" min="0" max="23" required>
-      <label for="led_end_time">종료</label>
-      <input type="number" id="led_end_time" name="led_end_time" min="0" max="23" required>
-      <label for="led_interval">Interval (seconds):</label> <!-- on off 추가 -->
-      <input type="number" id="led_interval" name="led_interval" min="1" required>
+      <label for="led_start_hour">시작 시간 (시)</label>
+      <input type="number" id="led_start_hour" name="led_start_hour" min="0" max="23" required>
+      <label for="led_start_minute">시작 시간 (분)</label>
+      <input type="number" id="led_start_minute" name="led_start_minute" min="0" max="59" required>
+
+      <label for="led_end_hour">종료 시간 (시)</label>
+      <input type="number" id="led_end_hour" name="led_end_hour" min="0" max="23" required>
+      <label for="led_end_minute">종료 시간 (분)</label>
+      <input type="number" id="led_end_minute" name="led_end_minute" min="0" max="59" required>
+
+      <label for="led_on_time">켜짐 시간 (seconds)</label> <!-- on_time 추가 -->
+      <input type="number" id="led_on_time" name="led_on_time" min="1" required>
+      <label for="led_off_time">꺼짐 시간 (seconds)</label> <!-- off_time 추가 -->
+      <input type="number" id="led_off_time" name="led_off_time" min="1" required>
     </div>
 
     <div>
       FAN 제어
-      <label for="fan_start_time">시작</label>
-      <input type="number" id="fan_start_time" name="fan_start_time" min="0" max="23" required>
-      <label for="fan_end_time">종료</label>
-      <input type="number" id="fan_end_time" name="fan_end_time" min="0" max="23" required>
-      <label for="fan_interval">Interval (seconds):</label>
-      <input type="number" id="fan_interval" name="fan_interval" min="1" required>
+      <label for="fan_start_hour">시작 시간 (시)</label>
+      <input type="number" id="fan_start_hour" name="fan_start_hour" min="0" max="23" required>
+      <label for="fan_start_minute">시작 시간 (분)</label>
+      <input type="number" id="fan_start_minute" name="fan_start_minute" min="0" max="59" required>
+
+      <label for="fan_end_hour">종료 시간 (시)</label>
+      <input type="number" id="fan_end_hour" name="fan_end_hour" min="0" max="23" required>
+      <label for="fan_end_minute">종료 시간 (분)</label>
+      <input type="number" id="fan_end_minute" name="fan_end_minute" min="0" max="59" required>
+
+      <label for="fan_on_time">켜짐 시간 (seconds)</label> <!-- on_time 추가 -->
+      <input type="number" id="fan_on_time" name="fan_on_time" min="1" required>
+      <label for="fan_off_time">꺼짐 시간 (seconds)</label> <!-- off_time 추가 -->
+      <input type="number" id="fan_off_time" name="fan_off_time" min="1" required>
     </div>
 
     <div>
       PUMP 제어
-      <label for="pump_start_time">시작</label>
-      <input type="number" id="pump_start_time" name="pump_start_time" min="0" max="23" required>
-      <label for="pump_end_time">종료</label>
-      <input type="number" id="pump_end_time" name="pump_end_time" min="0" max="23" required>
-      <label for="pump_interval">Interval (seconds):</label>
-      <input type="number" id="pump_interval" name="pump_interval" min="1" required>
+      <label for="pump_start_hour">시작 시간 (시)</label>
+      <input type="number" id="pump_start_hour" name="pump_start_hour" min="0" max="23" required>
+      <label for="pump_start_minute">시작 시간 (분)</label>
+      <input type="number" id="pump_start_minute" name="pump_start_minute" min="0" max="59" required>
+
+      <label for="pump_end_hour">종료 시간 (시)</label>
+      <input type="number" id="pump_end_hour" name="pump_end_hour" min="0" max="23" required>
+      <label for="pump_end_minute">종료 시간 (분)</label>
+      <input type="number" id="pump_end_minute" name="pump_end_minute" min="0" max="59" required>
+
+      <label for="pump_on_time">켜짐 시간 (seconds)</label> <!-- on_time 추가 -->
+      <input type="number" id="pump_on_time" name="pump_on_time" min="1" required>
+      <label for="pump_off_time">꺼짐 시간 (seconds)</label> <!-- off_time 추가 -->
+      <input type="number" id="pump_off_time" name="pump_off_time" min="1" required>
+    </div>
+
+    <div>
+      카메라 설정
+      <label for="camera_interval">사진 촬영 간격 (seconds)</label> <!-- 카메라 인터벌 추가 -->
+      <input type="number" id="camera_interval" name="camera_interval" min="1" required>
     </div>
 
     <div>
@@ -96,6 +126,12 @@
     const API_post = "/www";
 
     let socket = new WebSocket("ws://" + location.hostname + ":" + location.port + "/wss/");
+
+    document.addEventListener("DOMContentLoaded", function ()
+    {
+      get_timelapse_videos();
+      get_env_data();
+    });
 
     socket.onmessage = function (event)
     {
@@ -172,38 +208,59 @@
     {
       event.preventDefault(); // 폼의 기본 제출 동작을 막음
 
-      // 폼 데이터를 수집
-      var led_start_time = _('led_start_time').value;
-      var led_end_time = _('led_end_time').value;
-      var led_interval = _('led_interval').value;
+      // LED 설정 수집
+      var led_start_hour = _('led_start_hour').value;
+      var led_start_minute = _('led_start_minute').value;
+      var led_end_hour = _('led_end_hour').value;
+      var led_end_minute = _('led_end_minute').value;
+      var led_on_time = _('led_on_time').value;
+      var led_off_time = _('led_off_time').value;
 
-      var fan_start_time = _('fan_start_time').value;
-      var fan_end_time = _('fan_end_time').value;
-      var fan_interval = _('fan_interval').value;
+      // FAN 설정 수집
+      var fan_start_hour = _('fan_start_hour').value;
+      var fan_start_minute = _('fan_start_minute').value;
+      var fan_end_hour = _('fan_end_hour').value;
+      var fan_end_minute = _('fan_end_minute').value;
+      var fan_on_time = _('fan_on_time').value;
+      var fan_off_time = _('fan_off_time').value;
 
-      var pump_start_time = _('pump_start_time').value;
-      var pump_end_time = _('pump_end_time').value;
-      var pump_interval = _('pump_interval').value;
+      // PUMP 설정 수집
+      var pump_start_hour = _('pump_start_hour').value;
+      var pump_start_minute = _('pump_start_minute').value;
+      var pump_end_hour = _('pump_end_hour').value;
+      var pump_end_minute = _('pump_end_minute').value;
+      var pump_on_time = _('pump_on_time').value;
+      var pump_off_time = _('pump_off_time').value;
+
+      // Camera 설정 수집
+      var camera_interval = _('camera_interval').value;
 
       var data = new FormData();
 
       var env = {
         LED: {
-          start_time: led_start_time,
-          end_time: led_end_time,
-          interval: led_interval
+          start_time: led_start_hour + ":" + led_start_minute,
+          end_time: led_end_hour + ":" + led_end_minute,
+          on_time: led_on_time,
+          off_time: led_off_time
         },
         FAN: {
-          start_time: fan_start_time,
-          end_time: fan_end_time,
-          interval: fan_interval
+          start_time: fan_start_hour + ":" + fan_start_minute,
+          end_time: fan_end_hour + ":" + fan_end_minute,
+          on_time: fan_on_time,
+          off_time: fan_off_time
         },
         PUMP: {
-          start_time: pump_start_time,
-          end_time: pump_end_time,
-          interval: pump_interval
+          start_time: pump_start_hour + ":" + pump_start_minute,
+          end_time: pump_end_hour + ":" + pump_end_minute,
+          on_time: pump_on_time,
+          off_time: pump_off_time
+        },
+        CAMERA: {
+          interval: camera_interval  // 카메라 인터벌 추가
         }
       };
+
       data.append('func', 'save_env');
       data.append('env', JSON.stringify(env));
 
@@ -212,13 +269,18 @@
       POST(API_post, data, function (resp)
       {
         if (resp.data)
+        {
           console.log(resp.data);
+          get_env_data();
+        }
         else
+        {
           alert("no message");
+        }
       });
     });
 
-    document.addEventListener("DOMContentLoaded", function ()
+    var get_timelapse_videos = function ()
     {
       var data = new FormData();
       data.append('func', 'get_timelapse_videos');
@@ -248,7 +310,78 @@
         else
           alert("no message");
       });
-    });
+    }
+
+    var get_env_data = function ()
+    {
+      var data = new FormData();
+      data.append('func', 'get_env');
+
+      POST(API_post, data, function (resp)
+      {
+        if (resp.data)
+        {
+          try
+          {
+            // resp.data에서 JSON 파싱하여 env 객체로 변환
+            const env = JSON.parse(resp.data);
+
+            // 시간을 분리하는 함수 (HH:MM 형식)
+            function split_time(timeStr)
+            {
+              const [hour, minute] = timeStr.split(':');
+              return { hour, minute };
+            }
+
+            // LED 관련 설정 값 반영
+            let ledStartTime = split_time(env.LED.start_time);
+            document.getElementById('led_start_hour').value = ledStartTime.hour;
+            document.getElementById('led_start_minute').value = ledStartTime.minute;
+
+            let ledEndTime = split_time(env.LED.end_time);
+            document.getElementById('led_end_hour').value = ledEndTime.hour;
+            document.getElementById('led_end_minute').value = ledEndTime.minute;
+
+            document.getElementById('led_on_time').value = env.LED.on_time;
+            document.getElementById('led_off_time').value = env.LED.off_time;
+
+            // FAN 관련 설정 값 반영
+            let fanStartTime = split_time(env.FAN.start_time);
+            document.getElementById('fan_start_hour').value = fanStartTime.hour;
+            document.getElementById('fan_start_minute').value = fanStartTime.minute;
+
+            let fanEndTime = split_time(env.FAN.end_time);
+            document.getElementById('fan_end_hour').value = fanEndTime.hour;
+            document.getElementById('fan_end_minute').value = fanEndTime.minute;
+
+            document.getElementById('fan_on_time').value = env.FAN.on_time;
+            document.getElementById('fan_off_time').value = env.FAN.off_time;
+
+            // PUMP 관련 설정 값 반영
+            let pumpStartTime = split_time(env.PUMP.start_time);
+            document.getElementById('pump_start_hour').value = pumpStartTime.hour;
+            document.getElementById('pump_start_minute').value = pumpStartTime.minute;
+
+            let pumpEndTime = split_time(env.PUMP.end_time);
+            document.getElementById('pump_end_hour').value = pumpEndTime.hour;
+            document.getElementById('pump_end_minute').value = pumpEndTime.minute;
+
+            document.getElementById('pump_on_time').value = env.PUMP.on_time;
+            document.getElementById('pump_off_time').value = env.PUMP.off_time;
+
+            // 카메라 인터벌 반영
+            document.getElementById('camera_interval').value = env.CAMERA.interval;
+
+          } catch (e)
+          {
+            console.error('Error parsing JSON:', e);
+          }
+        } else
+        {
+          alert("no message");
+        }
+      });
+    }
 
 
   </script>

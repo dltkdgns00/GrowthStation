@@ -11,11 +11,12 @@ def update_env(data):
     # JSON 문자열을 딕셔너리로 변환
     data = json.loads(data)  # JSON 문자열을 딕셔너리로 변환    
 
-    
     # 'LED' 설정 접근
     if 'LED' in data:
-        if 'interval' in data['LED']:
-            set_key(env_path, 'LED_INTERVAL', str(data['LED']['interval']))
+        if 'on_time' in data['LED']:
+            set_key(env_path, 'LED_ON_TIME', str(data['LED']['on_time']))
+        if 'off_time' in data['LED']:
+            set_key(env_path, 'LED_OFF_TIME', str(data['LED']['off_time']))
         if 'start_time' in data['LED']:
             set_key(env_path, 'LED_START_TIME', str(data['LED']['start_time']))
         if 'end_time' in data['LED']:
@@ -23,8 +24,10 @@ def update_env(data):
 
     # 'FAN' 설정 접근
     if 'FAN' in data:
-        if 'interval' in data['FAN']:
-            set_key(env_path, 'FAN_INTERVAL', str(data['FAN']['interval']))
+        if 'on_time' in data['FAN']:
+            set_key(env_path, 'FAN_ON_TIME', str(data['FAN']['on_time']))
+        if 'off_time' in data['FAN']:
+            set_key(env_path, 'FAN_OFF_TIME', str(data['FAN']['off_time']))
         if 'start_time' in data['FAN']:
             set_key(env_path, 'FAN_START_TIME', str(data['FAN']['start_time']))
         if 'end_time' in data['FAN']:
@@ -32,16 +35,22 @@ def update_env(data):
 
     # 'PUMP' 설정 접근
     if 'PUMP' in data:
-        if 'interval' in data['PUMP']:
-            set_key(env_path, 'PUMP_INTERVAL', str(data['PUMP']['interval']))
+        if 'on_time' in data['PUMP']:
+            set_key(env_path, 'PUMP_ON_TIME', str(data['PUMP']['on_time']))
+        if 'off_time' in data['PUMP']:
+            set_key(env_path, 'PUMP_OFF_TIME', str(data['PUMP']['off_time']))
         if 'start_time' in data['PUMP']:
             set_key(env_path, 'PUMP_START_TIME', str(data['PUMP']['start_time']))
         if 'end_time' in data['PUMP']:
             set_key(env_path, 'PUMP_END_TIME', str(data['PUMP']['end_time']))
 
+    # 'CAMERA' 설정 접근
+    if 'CAMERA' in data:
+        if 'interval' in data['CAMERA']:
+            set_key(env_path, 'CAMERA_INTERVAL', str(data['CAMERA']['interval']))
+
 if __name__ == "__main__":
     try:
-        # 명령줄 인자로 전달받은 JSON 문자열을 딕셔너리로 변환 후 함수 호출
         raw_data = sys.argv[1]
         update_env(raw_data)
         print("Environment variables updated")

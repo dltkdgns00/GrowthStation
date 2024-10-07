@@ -52,6 +52,8 @@ def func_status(data):
     except Exception as e:
         # 디렉토리 접근이나 다른 에러 발생 시 처리
         return resp(str(e))
+
+
 def func_save_env(data):
     """
     POST로 받은 데이터를 바탕으로 .env 파일을 업데이트하는 함수
@@ -84,6 +86,25 @@ def func_save_env(data):
     except Exception as e:
         return resp(str(e))
 
+def func_get_env(data):
+    try:
+        # get_env.py 파일을 sudo로 실행
+        result = subprocess.run(
+            ['sudo', 'python3', 'ctl/lib/get_env.py'], 
+            text=True,  # 문자열로 출력 및 입력을 처리
+            capture_output=True  # 표준 출력과 오류를 캡처
+        )
+
+        print(result.stdout)
+
+        if result.returncode != 0:
+            return resp(f"Error: {result.stderr}")
+        else:
+            return resp(result.stdout, "success")
+        
+    except Exception as e:
+        return resp(str(e))
+
 
 def func_get_timelapse_videos(data):
     # 타임랩스 비디오가 저장된 경로
@@ -103,4 +124,8 @@ def func_get_timelapse_videos(data):
     
     except Exception as e:
         # 디렉토리 접근이나 다른 에러 발생 시 처리
-        return resp(str(e), "fail")
+        return resp(str(e))
+    
+
+if __name__ == "__main__":
+    func_get_env({})
